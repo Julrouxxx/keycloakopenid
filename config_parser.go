@@ -21,6 +21,7 @@ type Config struct {
 	ClientIDEnv      string `json:"client_id_env"`
 	ClientSecretEnv  string `json:"client_secret_env"`
 	KeycloakRealmEnv string `json:"keycloak_realm_env"`
+	KeycloakRole     string `json:"keycloak_role"`
 }
 
 type keycloakAuth struct {
@@ -29,6 +30,7 @@ type keycloakAuth struct {
 	ClientID      string
 	ClientSecret  string
 	KeycloakRealm string
+	KeycloakRole string
 }
 
 type KeycloakTokenResponse struct {
@@ -144,5 +146,6 @@ func New(uctx context.Context, next http.Handler, config *Config, name string) (
 		ClientID:      config.ClientID,
 		ClientSecret:  config.ClientSecret,
 		KeycloakRealm: config.KeycloakRealm,
+		KeycloakRole: config.KeycloakRole,
 	}, nil
 }
