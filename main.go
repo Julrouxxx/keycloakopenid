@@ -229,8 +229,7 @@ func (k *keycloakAuth) verifyToken(token string) (bool, error) {
 	if err != nil {
 		return false, err
 	}
-	fmt.Println("DEBUG: token ", introspectResponse)
-	if k.KeycloakRole != "" {
+	if k.KeycloakRole != "" && introspectResponse.Active {
 		realm_access := introspectResponse.RealmAccess
 		fmt.Println("Logged user has these roles ", realm_access)
 		access_granted := stringInSlice(k.KeycloakRole, realm_access.Roles)
