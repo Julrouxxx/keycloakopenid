@@ -217,19 +217,25 @@ func (k *keycloakAuth) verifyToken(token string) (bool, error) {
 	if resp.StatusCode != http.StatusOK {
 		return false, nil
 	}
-
-	var introspectResponse map[string]interface{}
+	type RealmRoles struct {
+		Roles []string `json:"roles"`
+	}
+	type IntrospectType struct {
+		Active    bool `json:"active"`
+		RealmAccess RealmRoles `json:"realm_roles"`
+	}
+	var introspectResponse IntrospectType
 	err = json.NewDecoder(resp.Body).Decode(&introspectResponse)
 	if err != nil {
 		return false, err
 	}
 	if k.KeycloakRole != ""{
-		realm_access := introspectResponse["realm_access"].(map[string]interface{})["roles"]
+		realm_access := introspectResponse.RealmAccess
 		fmt.Println("Logged user has these roles ", realm_access)
-		access_granted := stringInSlice(k.KeycloakRole, realm_access.([]string))
+		access_granted := stringInSlice(k.KeycloakRole, realm_access.Roles)
 		if !access_granted {
 			return false, errors.New("NOT_GOOD_ROLE")
 		}
 	}
-	return introspectResponse["active"].(bool), nil
+	return introspectResponse.Active, nil
 }
