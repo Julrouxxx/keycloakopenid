@@ -10,8 +10,6 @@ import (
 	"net/url"
 	"strings"
 	"time"
-
-	"golang.org/x/exp/slices"
 )
 
 func (k *keycloakAuth) ServeHTTP(rw http.ResponseWriter, req *http.Request) {
@@ -173,6 +171,16 @@ func (k *keycloakAuth) redirectToKeycloak(rw http.ResponseWriter, req *http.Requ
 	http.Redirect(rw, req, redirectURL.String(), http.StatusFound)
 }
 
+
+func stringInSlice(a string, list []string) bool {
+    for _, b := range list {
+        if b == a {
+            return true
+        }
+    }
+    return false
+}
+
 func (k *keycloakAuth) verifyToken(token string) (bool, error) {
 
 	client := &http.Client{}
@@ -215,11 +223,13 @@ func (k *keycloakAuth) verifyToken(token string) (bool, error) {
 	if err != nil {
 		return false, err
 	}
-	realm_access := introspectResponse["realm_access"].(map[string]interface{})["roles"].([]string)
-	fmt.Println("Logged user has these roles ", realm_access)
-	access_granted := slices.Contains(realm_access, k.KeycloakRole)
-	if !access_granted {
-		return false, errors.New("NOT_GOOD_ROLE")
+	if k.KeycloakRole != ""{
+		realm_access := introspectResponse["realm_access"].(map[string]interface{})["roles"].([]string)
+		fmt.Println("Logged user has these roles ", realm_access)
+		access_granted := stringInSlice(k.KeycloakRole, realm_access)
+		if !access_granted {
+			return false, errors.New("NOT_GOOD_ROLE")
+		}
 	}
 	return introspectResponse["active"].(bool), nil
 }
