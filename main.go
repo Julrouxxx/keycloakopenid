@@ -224,9 +224,9 @@ func (k *keycloakAuth) verifyToken(token string) (bool, error) {
 		return false, err
 	}
 	if k.KeycloakRole != ""{
-		realm_access := introspectResponse["realm_access"].(map[string]interface{})["roles"].([]string)
+		realm_access := introspectResponse["realm_access"].(map[string]interface{})["roles"]
 		fmt.Println("Logged user has these roles ", realm_access)
-		access_granted := stringInSlice(k.KeycloakRole, realm_access)
+		access_granted := stringInSlice(k.KeycloakRole, realm_access.([]string))
 		if !access_granted {
 			return false, errors.New("NOT_GOOD_ROLE")
 		}
