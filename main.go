@@ -222,14 +222,14 @@ func (k *keycloakAuth) verifyToken(token string) (bool, error) {
 	}
 	type IntrospectType struct {
 		Active    bool `json:"active"`
-		RealmAccess RealmRoles `json:"realm_roles"`
+		RealmAccess RealmRoles `json:"realm_access"`
 	}
 	var introspectResponse IntrospectType
 	err = json.NewDecoder(resp.Body).Decode(&introspectResponse)
 	if err != nil {
 		return false, err
 	}
-	if k.KeycloakRole != ""{
+	if k.KeycloakRole != "" {
 		realm_access := introspectResponse.RealmAccess
 		fmt.Println("Logged user has these roles ", realm_access)
 		access_granted := stringInSlice(k.KeycloakRole, realm_access.Roles)
