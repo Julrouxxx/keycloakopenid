@@ -90,7 +90,8 @@ func (k *keycloakAuth) ServeHTTP(rw http.ResponseWriter, req *http.Request) {
 		qry.Del("session_state")
 		req.URL.RawQuery = qry.Encode()
 		req.RequestURI = req.URL.RequestURI()
-
+		req.Header.Add("Authorization", "Bearer " + token)
+		
 		scheme := req.Header.Get("X-Forwarded-Proto")
 		host := req.Header.Get("X-Forwarded-Host")
 		originalURL := fmt.Sprintf("%s://%s%s", scheme, host, req.RequestURI)
