@@ -16,10 +16,8 @@ func (k *keycloakAuth) ServeHTTP(rw http.ResponseWriter, req *http.Request) {
 	cookie, err := req.Cookie("Authorization")
 	if err == nil && strings.HasPrefix(cookie.Value, "Bearer ") {
 		token := strings.TrimPrefix(cookie.Value, "Bearer ")
-		fmt.Printf("token = %+v\n", token)
 
 		ok, err := k.verifyToken(token)
-		fmt.Printf("ok = %+v\n", ok)
 		if err != nil {
 			if err.Error() == "NOT_GOOD_ROLE" {
 				http.Error(rw, "Vous n'avez pas le bon role", http.StatusForbidden)
