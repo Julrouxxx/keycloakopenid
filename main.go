@@ -48,7 +48,7 @@ func (k *keycloakAuth) ServeHTTP(rw http.ResponseWriter, req *http.Request) {
 			k.redirectToKeycloak(rw, req)
 			return
 		}
-
+		req.Header.Set("Authorization", "Bearer " + token)
 		k.next.ServeHTTP(rw, req)
 	} else {
 		authCode := req.URL.Query().Get("code")
@@ -92,7 +92,6 @@ func (k *keycloakAuth) ServeHTTP(rw http.ResponseWriter, req *http.Request) {
 		scheme := req.Header.Get("X-Forwarded-Proto")
 		host := req.Header.Get("X-Forwarded-Host")
 		originalURL := fmt.Sprintf("%s://%s%s", scheme, host, req.RequestURI)
-		req.Header.Set("Authorization", "Bearer " + token)
 
 		http.Redirect(rw, req, originalURL, http.StatusFound)
 	}
