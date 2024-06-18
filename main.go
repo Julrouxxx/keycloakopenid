@@ -20,15 +20,9 @@ func (k *keycloakAuth) ServeHTTP(rw http.ResponseWriter, req *http.Request) {
 		if err == nil && strings.HasPrefix(cookie.Value, "Bearer "){
 			token = strings.TrimPrefix(cookie.Value, "Bearer ")
 			fmt.Printf("login via cookie\n")
-			fmt.Printf("token value: ")
-			fmt.Printf(token)
-			fmt.Printf("\n")
 		} else if headerOk {
 			token = strings.TrimPrefix(header[0], "Bearer ")
 			fmt.Printf("login via header\n")
-			fmt.Printf("token value: ")
-			fmt.Printf(token)
-			fmt.Printf("\n")
 		}
 
 		ok, err := k.verifyToken(token)
