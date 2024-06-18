@@ -15,6 +15,7 @@ import (
 func (k *keycloakAuth) ServeHTTP(rw http.ResponseWriter, req *http.Request) {
 	cookie, err := req.Cookie("Authorization")
 	if err == nil && (strings.HasPrefix(cookie.Value, "Bearer ") || strings.HasPrefix(req.Header.Get("Authorization"), "Bearer ")) {
+		token := ""
 		if strings.HasPrefix(cookie.Value, "Bearer "){
 			token := strings.TrimPrefix(cookie.Value, "Bearer ")
 		}else{
