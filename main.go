@@ -15,13 +15,13 @@ import (
 func (k *keycloakAuth) ServeHTTP(rw http.ResponseWriter, req *http.Request) {
 	cookie, err := req.Cookie("Authorization")
 	header, headerOk := req.Header["Authorization"]
-	if (err == nil && strings.HasPrefix(cookie.Value, "Bearer ")) || (headerOk && strings.HasPrefix(header, "Bearer ")) {
+	if (err == nil && strings.HasPrefix(cookie.Value, "Bearer ")) || (headerOk && strings.HasPrefix(header[0], "Bearer ")) {
 		token := ""
 		if strings.HasPrefix(cookie.Value, "Bearer "){
 			token := strings.TrimPrefix(cookie.Value, "Bearer ")
 			fmt.Printf("login via cookie\n")
 		} else {
-			token := strings.TrimPrefix(header, "Bearer ")
+			token := strings.TrimPrefix(header[0], "Bearer ")
 			fmt.Printf("login via header\n")
 		}
 		fmt.Printf("token value: ")
