@@ -14,14 +14,17 @@ import (
 
 func (k *keycloakAuth) ServeHTTP(rw http.ResponseWriter, req *http.Request) {
 	cookie, err := req.Cookie("Authorization")
-	if err == nil && (strings.HasPrefix(cookie.Value, "Bearer ") || strings.HasPrefix(req.Header.Get("Authorization"), "Bearer ")) {
+	header := req.Header.Get("Authorization")
+	if err == nil && (strings.HasPrefix(cookie.Value, "Bearer ") || strings.HasPrefix(header, "Bearer ")) {
 		token := ""
 		if strings.HasPrefix(cookie.Value, "Bearer "){
 			token := strings.TrimPrefix(cookie.Value, "Bearer ")
-		}else{
-			token := strings.TrimPrefix(req.Header.Get("Authorization"), "Bearer ")
+			fmt.Printf("login via cookie")
+		} else {
+			token := strings.TrimPrefix(header, "Bearer ")
+			fmt.Printf("login via header")
 		}
-
+		
 		ok, err := k.verifyToken(token)
 		if err != nil {
 			if err.Error() == "NOT_GOOD_ROLE" {
