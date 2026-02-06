@@ -12,25 +12,20 @@ import (
 
 type Config struct {
 	KeycloakURL      string `json:"url"`
-	ClientID         string `json:"client_id"`
-	ClientSecret     string `json:"client_secret"`
 	KeycloakRealm    string `json:"keycloak_realm"`
-	ClientIDFile     string `json:"client_id_file"`
-	ClientSecretFile string `json:"client_secret_file"`
-	KeycloakURLEnv   string `json:"url_env"`
-	ClientIDEnv      string `json:"client_id_env"`
-	ClientSecretEnv  string `json:"client_secret_env"`
-	KeycloakRealmEnv string `json:"keycloak_realm_env"`
+	ClientID         string `json:"client_id"`
 	KeycloakRole     string `json:"keycloak_role"`
-}
 
+	KeycloakURLEnv   string `json:"url_env"`
+	KeycloakRealmEnv string `json:"keycloak_realm_env"`
+	ClientIDEnv      string `json:"client_id_env"`
+}
 type keycloakAuth struct {
 	next          http.Handler
 	KeycloakURL   *url.URL
-	ClientID      string
-	ClientSecret  string
 	KeycloakRealm string
-	KeycloakRole string
+	ClientID      string
+	KeycloakRole  string
 }
 
 type KeycloakTokenResponse struct {
@@ -121,17 +116,21 @@ func readConfigEnv(config *Config) error {
 	return nil
 }
 
-func New(uctx context.Context, next http.Handler, config *Config, name string) (http.Handler, error) {
-	err := readSecretFiles(config)
-	if err != nil {
-		return nil, err
-	}
-	err = readConfigEnv(config)
+func New(
+	uctx context.Context,
+	next http.Handler,
+	config *Config,
+	name string,
+) (http.Handler, error) {
+
+	err := readConfigEnv(config)
 	if err != nil {
 		return nil, err
 	}
 
-	if config.ClientID == "" || config.KeycloakRealm == "" {
+	if config.KeycloakURL == "" ||
+		config.KeycloakRealm == "" ||
+		config.ClientID == "" {
 		return nil, errors.New("invalid configuration")
 	}
 
@@ -143,9 +142,9 @@ func New(uctx context.Context, next http.Handler, config *Config, name string) (
 	return &keycloakAuth{
 		next:          next,
 		KeycloakURL:   parsedURL,
-		ClientID:      config.ClientID,
-		ClientSecret:  config.ClientSecret,
 		KeycloakRealm: config.KeycloakRealm,
-		KeycloakRole: config.KeycloakRole,
+		ClientID:      config.ClientID,
+		KeycloakRole:  config.KeycloakRole,
 	}, nil
 }
+

@@ -10,7 +10,11 @@ import (
 	"net/url"
 	"strings"
 	"time"
+	"context"
+	"github.com/MicahParks/keyfunc"
+	"github.com/golang-jwt/jwt/v5"
 )
+
 
 func (k *keycloakAuth) ServeHTTP(rw http.ResponseWriter, req *http.Request) {
 	cookie, err := req.Cookie("Authorization")
@@ -187,62 +191,54 @@ func stringInSlice(a string, list []string) bool {
     }
     return false
 }
-
-func (k *keycloakAuth) verifyToken(token string) (bool, error) {
-
-	client := &http.Client{}
-
-	data := url.Values{
-		"token": {token},
-	}
-
-	req, err := http.NewRequest(
-		http.MethodPost,
-		k.KeycloakURL.JoinPath(
-			"realms",
-			k.KeycloakRealm,
-			"protocol",
-			"openid-connect",
-			"token",
-			"introspect",
-		).String(),
-		strings.NewReader(data.Encode()),
+func (k *keycloakAuth) verifyToken(tokenString string) (bool, error) {
+	jwksURL := k.KeycloakURL.JoinPath(
+		"realms",
+		k.KeycloakRealm,
+		"protocol",
+		"openid-connect",
+		"certs",
 	)
+
+	jwks, err := keyfunc.Get(jwksURL.String(), keyfunc.Options{
+		RefreshInterval: time.Hour,
+	})
 	if err != nil {
 		return false, err
 	}
 
-	req.Header.Add("Content-Type", "application/x-www-form-urlencoded")
-	req.SetBasicAuth(k.ClientID, k.ClientSecret)
-
-	resp, err := client.Do(req)
-	if err != nil {
-		return false, err
-	}
-	defer resp.Body.Close()
-
-	if resp.StatusCode != http.StatusOK {
+	token, err := jwt.Parse(tokenString, jwks.Keyfunc)
+	if err != nil || !token.Valid {
 		return false, nil
 	}
-	type RealmRoles struct {
-		Roles []string `json:"roles"`
+
+	claims := token.Claims.(jwt.MapClaims)
+
+	// issuer
+	if claims["iss"] != fmt.Sprintf("%s/realms/%s", k.KeycloakURL, k.KeycloakRealm) {
+		return false, nil
 	}
-	type IntrospectType struct {
-		Active    bool `json:"active"`
-		RealmAccess RealmRoles `json:"realm_access"`
+
+	// audience
+	aud := claims["aud"]
+	if aud != k.ClientID {
+		return false, nil
 	}
-	var introspectResponse IntrospectType
-	err = json.NewDecoder(resp.Body).Decode(&introspectResponse)
-	if err != nil {
-		return false, err
-	}
-	if k.KeycloakRole != "" && introspectResponse.Active {
-		realm_access := introspectResponse.RealmAccess
-		fmt.Println("Logged user has these roles ", realm_access)
-		access_granted := stringInSlice(k.KeycloakRole, realm_access.Roles)
-		if !access_granted {
+
+	// rôle
+	if k.KeycloakRole != "" {
+		realmAccess := claims["realm_access"].(map[string]interface{})
+		roles := realmAccess["roles"].([]interface{})
+		found := false
+		for _, r := range roles {
+			if r.(string) == k.KeycloakRole {
+				found = true
+			}
+		}
+		if !found {
 			return false, errors.New("NOT_GOOD_ROLE")
 		}
 	}
-	return introspectResponse.Active, nil
+
+	return true, nil
 }
