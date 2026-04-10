@@ -10,8 +10,8 @@ import (
 	"net/url"
 	"strings"
 	"time"
-	"context"
-	"github.com/MicahParks/keyfunc"
+
+	"github.com/MicahParks/keyfunc/v2"
 	"github.com/golang-jwt/jwt/v5"
 )
 
@@ -129,7 +129,6 @@ func (k *keycloakAuth) exchangeAuthCode(req *http.Request, authCode string, stat
 		url.Values{
 			"grant_type":    {"authorization_code"},
 			"client_id":     {k.ClientID},
-			"client_secret": {k.ClientSecret},
 			"code":          {authCode},
 			"redirect_uri":  {state.RedirectURL},
 		})
