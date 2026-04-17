@@ -52,11 +52,11 @@ func (k *keycloakAuth) ServeHTTP(rw http.ResponseWriter, req *http.Request) {
 	header, headerOk := req.Header["Authorization"]
 	if (err == nil && strings.HasPrefix(cookie.Value, "Bearer ")) || (headerOk && strings.HasPrefix(header[0], "Bearer ")) {
 		var token string;
-		if err == nil && strings.HasPrefix(cookie.Value, "Bearer "){
-			token = strings.TrimPrefix(cookie.Value, "Bearer ")
-			fmt.Printf("login via cookie\n")
-		} else if headerOk {
+		if err == nil && headerOk && strings.HasPrefix(header[0], "Bearer "){
 			token = strings.TrimPrefix(header[0], "Bearer ")
+			fmt.Printf("login via token\n")
+		} else if strings.HasPrefix(cookie.Value, "Bearer ") {
+			token = strings.TrimPrefix(cookie.Value, "Bearer ")
 			fmt.Printf("login via header\n")
 		}
 
