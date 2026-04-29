@@ -53,7 +53,7 @@ func (k *keycloakAuth) ServeHTTP(rw http.ResponseWriter, req *http.Request) {
 	headerHasBearer := headerOk && len(header) > 0 && strings.HasPrefix(header[0], "Bearer ")
 	if (err == nil && strings.HasPrefix(cookie.Value, "Bearer ")) || headerHasBearer {
 		var token string
-		if err == nil && strings.HasPrefix(cookie.Value, "Bearer "){
+		if err == nil && strings.HasPrefix(cookie.Value, "Bearer ") {
 			token = strings.TrimPrefix(cookie.Value, "Bearer ")
 			fmt.Printf("login via cookie\n")
 		} else if headerHasBearer {
@@ -92,7 +92,7 @@ func (k *keycloakAuth) ServeHTTP(rw http.ResponseWriter, req *http.Request) {
 			k.redirectToKeycloak(rw, req)
 			return
 		}
-		req.Header.Set("Authorization", "Bearer " + token)
+		req.Header.Set("Authorization", "Bearer "+token)
 		k.next.ServeHTTP(rw, req)
 	} else {
 		authCode := req.URL.Query().Get("code")
@@ -132,11 +132,11 @@ func (k *keycloakAuth) ServeHTTP(rw http.ResponseWriter, req *http.Request) {
 		qry.Del("session_state")
 		req.URL.RawQuery = qry.Encode()
 		req.RequestURI = req.URL.RequestURI()
-		
+
 		scheme := req.Header.Get("X-Forwarded-Proto")
 		host := req.Header.Get("X-Forwarded-Host")
 		originalURL := fmt.Sprintf("%s://%s%s", scheme, host, req.RequestURI)
-		req.Header.Set("Authorization", "Bearer " + token)
+		req.Header.Set("Authorization", "Bearer "+token)
 
 		http.Redirect(rw, req, originalURL, http.StatusFound)
 	}
@@ -159,10 +159,10 @@ func (k *keycloakAuth) exchangeAuthCode(req *http.Request, authCode string, stat
 	)
 	resp, err := http.PostForm(target.String(),
 		url.Values{
-			"grant_type":    {"authorization_code"},
-			"client_id":     {k.ClientID},
-			"code":          {authCode},
-			"redirect_uri":  {state.RedirectURL},
+			"grant_type":   {"authorization_code"},
+			"client_id":    {k.ClientID},
+			"code":         {authCode},
+			"redirect_uri": {state.RedirectURL},
 		})
 
 	if err != nil {
@@ -212,7 +212,6 @@ func (k *keycloakAuth) redirectToKeycloak(rw http.ResponseWriter, req *http.Requ
 
 	http.Redirect(rw, req, redirectURL.String(), http.StatusFound)
 }
-
 
 func stringInSlice(a string, list []string) bool {
 	for _, b := range list {
