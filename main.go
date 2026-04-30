@@ -382,7 +382,7 @@ func (k *keycloakAuth) verifyToken(tokenString string) (bool, error) {
 		}
 	}
 	if matchingKey == nil {
-		return false, errors.New("no matching key found in JWKS")
+		return false, nil
 	}
 
 	// Construire la clé publique
