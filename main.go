@@ -51,15 +51,17 @@ func (k *keycloakAuth) ServeHTTP(rw http.ResponseWriter, req *http.Request) {
 	cookie, err := req.Cookie("Authorization")
 	header, headerOk := req.Header["Authorization"]
 	headerHasBearer := headerOk && len(header) > 0 && strings.HasPrefix(header[0], "Bearer ")
+	
 	if (err == nil && strings.HasPrefix(cookie.Value, "Bearer ")) || headerHasBearer {
 		var token string
-		if err == nil && strings.HasPrefix(cookie.Value, "Bearer ") {
+		if headerHasBearer{
+                        token = strings.TrimPrefix(header[0], "Bearer ")
+                        fmt.Printf("login via header\n")
+		} else if err == nil && strings.HasPrefix(cookie.Value, "Bearer ") {
 			token = strings.TrimPrefix(cookie.Value, "Bearer ")
 			fmt.Printf("login via cookie\n")
-		} else if headerHasBearer {
-			token = strings.TrimPrefix(header[0], "Bearer ")
-			fmt.Printf("login via header\n")
 		}
+
 
 		ok, err := k.verifyToken(token)
 		if err != nil {
@@ -91,6 +93,17 @@ func (k *keycloakAuth) ServeHTTP(rw http.ResponseWriter, req *http.Request) {
 
 			k.redirectToKeycloak(rw, req)
 			return
+		}
+		if headerHasBearer {
+                newCookie := &http.Cookie{
+                        Name: "Authorization",
+                        Value: "Bearer "+ token,
+                        Path: "/",
+                        Secure: true,
+                        HttpOnly: true,
+                        SameSite: http.SameSiteStrictMode,
+                }
+                http.SetCookie(rw, newCookie);
 		}
 		req.Header.Set("Authorization", "Bearer "+token)
 		k.next.ServeHTTP(rw, req)
