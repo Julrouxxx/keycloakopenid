@@ -51,19 +51,18 @@ func (k *keycloakAuth) ServeHTTP(rw http.ResponseWriter, req *http.Request) {
 	cookie, err := req.Cookie("Authorization")
 	header, headerOk := req.Header["Authorization"]
 	headerHasBearer := headerOk && len(header) > 0 && strings.HasPrefix(header[0], "Bearer ")
-	
 	if (err == nil && strings.HasPrefix(cookie.Value, "Bearer ")) || headerHasBearer {
 		var token string
-		if headerHasBearer{
-                        token = strings.TrimPrefix(header[0], "Bearer ")
-                        fmt.Printf("login via header\n")
-		} else if err == nil && strings.HasPrefix(cookie.Value, "Bearer ") {
+		if err == nil && strings.HasPrefix(cookie.Value, "Bearer ") {
 			token = strings.TrimPrefix(cookie.Value, "Bearer ")
 			fmt.Printf("login via cookie\n")
+		} else if headerHasBearer {
+			token = strings.TrimPrefix(header[0], "Bearer ")
+			fmt.Printf("login via header\n")
 		}
 
-
 		ok, err := k.verifyToken(token)
+		fmt.Printf("verifyToken result: ok=%v err=%v tokenLength=%d\n", ok,err, len(token))
 		if err != nil {
 			if err.Error() == "NOT_GOOD_ROLE" {
 				http.Error(rw, "Vous n'avez pas le bon role", http.StatusForbidden)
@@ -76,6 +75,7 @@ func (k *keycloakAuth) ServeHTTP(rw http.ResponseWriter, req *http.Request) {
 		if !ok {
 			qry := req.URL.Query()
 			qry.Del("code")
+			qry.Del("iss")
 			qry.Del("state")
 			qry.Del("session_state")
 			req.URL.RawQuery = qry.Encode()
@@ -93,17 +93,6 @@ func (k *keycloakAuth) ServeHTTP(rw http.ResponseWriter, req *http.Request) {
 
 			k.redirectToKeycloak(rw, req)
 			return
-		}
-		if headerHasBearer {
-                newCookie := &http.Cookie{
-                        Name: "Authorization",
-                        Value: "Bearer "+ token,
-                        Path: "/",
-                        Secure: true,
-                        HttpOnly: true,
-                        SameSite: http.SameSiteStrictMode,
-                }
-                http.SetCookie(rw, newCookie);
 		}
 		req.Header.Set("Authorization", "Bearer "+token)
 		k.next.ServeHTTP(rw, req)
@@ -136,13 +125,14 @@ func (k *keycloakAuth) ServeHTTP(rw http.ResponseWriter, req *http.Request) {
 			Secure:   true,
 			HttpOnly: true,
 			Path:     "/",
-			SameSite: http.SameSiteStrictMode,
+			SameSite: http.SameSiteLaxMode,
 		})
 
 		qry := req.URL.Query()
 		qry.Del("code")
 		qry.Del("state")
 		qry.Del("session_state")
+		qry.Del("iss")
 		req.URL.RawQuery = qry.Encode()
 		req.RequestURI = req.URL.RequestURI()
 
@@ -194,6 +184,7 @@ func (k *keycloakAuth) exchangeAuthCode(req *http.Request, authCode string, stat
 		return "", err
 	}
 
+
 	return tokenResponse.AccessToken, nil
 }
 
@@ -201,7 +192,6 @@ func (k *keycloakAuth) redirectToKeycloak(rw http.ResponseWriter, req *http.Requ
 	scheme := req.Header.Get("X-Forwarded-Proto")
 	host := req.Header.Get("X-Forwarded-Host")
 	originalURL := fmt.Sprintf("%s://%s%s", scheme, host, req.RequestURI)
-
 	state := state{
 		RedirectURL: originalURL,
 	}
@@ -217,6 +207,7 @@ func (k *keycloakAuth) redirectToKeycloak(rw http.ResponseWriter, req *http.Requ
 		"auth",
 	)
 	redirectURL.RawQuery = url.Values{
+		"response_mode": {"query"},
 		"response_type": {"code"},
 		"client_id":     {k.ClientID},
 		"redirect_uri":  {originalURL},
